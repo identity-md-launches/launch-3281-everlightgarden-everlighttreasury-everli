@@ -56,7 +56,8 @@ contract WishGarden is EverlightBridgeQueue {
         uint256 quantity = styles.length;
         _checkQuantity(quantity);
         if (quantity != wishes.length) revert LengthMismatch();
-        _checkFrozenRoute();
+        // Bridge route state is NOT a purchase precondition: it is checked when burn funds are dispatched.
+        _requireIMD();
         firstCandleId = totalCandles + 1;
         uint64 createdAt = block.timestamp.toUint64();
         for (uint256 i; i < quantity; ++i) {

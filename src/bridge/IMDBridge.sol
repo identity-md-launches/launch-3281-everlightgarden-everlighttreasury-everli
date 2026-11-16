@@ -83,7 +83,9 @@ library IMDBridge {
     address internal constant BASE_IMD = 0xFF0C532FDB8Cd566Ae169C1CB157ff2Bdc83E105;
     uint256 internal constant CONVERSION_RATE = 1e12;
     uint128 internal constant RECEIVE_GAS = 200_000;
-    uint128 internal constant COMPOSE_GAS = 500_000;
+    // The executor gives this to EndpointV2.lzCompose, whose queue bookkeeping and the 63/64 forwarding
+    // rule come out of it. A first delivery measured about 466.5k that way (test/RevisionFindings.t.sol).
+    uint128 internal constant COMPOSE_GAS = 650_000;
 
     function asBytes32(address account) internal pure returns (bytes32) {
         return bytes32(uint256(uint160(account)));

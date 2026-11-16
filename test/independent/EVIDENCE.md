@@ -9,3 +9,5 @@ This directory replaces the imported NFT/sink-specific independent suites, whose
 Other delivered tests cover token return/fee/no-op/surcharge failures, same/cross-function reentry (including an authorized owner), Unicode, unsupported/free/NFT entrypoints, unauthorized claims and bucket withdrawals, pause, ownership rotation, actual verified token/adapter bytecode, empty-chain constructors and forbidden opcodes.
 
 All test beneficiaries and fault doubles are local fixtures, not deployment arguments. These tests do not establish live LayerZero security, remote execution, liquidity, fees, token administrative status, deployment or signature. No fork or real-fund purchase is used. See `docs/validation.md` for recorded results and `docs/deployment.md` for setup blockers.
+
+Revision note: `../RevisionFindings.t.sol` answers the later independent review (pinned Base destination, third-party OFT option/peer changes, credited compose after re-peering, executor compose gas through an endpoint-style forwarder, joint batch/wish gas bound). Those tests are mocked as well; see `docs/validation.md`, "Revision after independent review".

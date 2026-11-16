@@ -13,6 +13,10 @@ abstract contract GardenTestBase is Test {
     address internal constant OWNER = 0x48E4E74fE1d0c14404cEB57B9fec5b21329C6ec9;
     address internal constant IMD = 0xD34a99Bc0f67aE1bbd63C660e6d0b0dd03E263B7;
     bytes32 internal constant EVIDENCE = keccak256("TEST ONLY: offline bridge verification");
+    /// @dev Runtime of the canonical deterministic deployer as read from Base (docs/evidence).
+    address internal constant CREATE2_DEPLOYER = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
+    bytes internal constant CREATE2_DEPLOYER_RUNTIME =
+        hex"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf3";
     WishGarden internal garden;
     EverlightBurnReceiver internal receiver;
     IMDOFTDouble internal token = IMDOFTDouble(IMD);
@@ -34,13 +38,28 @@ abstract contract GardenTestBase is Test {
         endpoint.setFee(1e14);
         token.setPeer(IMDBridge.asBytes32(IMDBridge.BASE_ADAPTER));
         garden = new WishGarden(OWNER);
-        receiver = new EverlightBurnReceiver(OWNER, address(garden));
+        receiver = _deployReceiver(garden, OWNER);
+        assertEq(address(receiver), garden.pinnedBaseReceiver(), "fixture receiver is not the pinned one");
         _activate(garden, address(receiver));
         token.mint(alice, 1_000_000e18);
         token.mint(bob, 1_000_000e18);
         token.mint(carol, 1_000_000e18);
         vm.deal(OWNER, 100 ether);
         vm.deal(alice, 100 ether);
+    }
+
+    /// @dev The owner's Base deployment: canonical deployer, source-fixed salt, (owner, garden) arguments.
+    function _deployReceiver(WishGarden g, address receiverOwner) internal returns (EverlightBurnReceiver) {
+        vm.etch(CREATE2_DEPLOYER, CREATE2_DEPLOYER_RUNTIME);
+        (bool ok, bytes memory out) = CREATE2_DEPLOYER.call(
+            bytes.concat(
+                g.BASE_RECEIVER_SALT(),
+                type(EverlightBurnReceiver).creationCode,
+                abi.encode(receiverOwner, address(g))
+            )
+        );
+        require(ok && out.length == 20, "deterministic deployment failed");
+        return EverlightBurnReceiver(address(bytes20(out)));
     }
 
     function _activate(WishGarden g, address receiverAddress) internal {

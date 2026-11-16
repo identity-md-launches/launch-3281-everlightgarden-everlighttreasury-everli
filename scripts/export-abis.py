@@ -2,10 +2,16 @@
 """Export checked Ethereum ABI and a separate, reproducible Base artifact. Never signs or broadcasts."""
 import argparse
 import hashlib
+import importlib.util
 import json
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.dont_write_bytecode = True
+_spec = importlib.util.spec_from_file_location("base_transaction", ROOT / "scripts/build-base-transaction.py")
+base_transaction = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(base_transaction)
 
 def export(check=False):
     for name in ("WishGarden", "EverlightBurnReceiver"):
@@ -27,6 +33,12 @@ def export(check=False):
                 "owner": "0x48E4E74fE1d0c14404cEB57B9fec5b21329C6ec9",
                 "constructorTypes": ["address", "address"],
                 "constructorFields": ["owner", "service-confirmed Ethereum WishGarden address"],
+                "deployment": "CREATE2 through the canonical deterministic deployer; calldata = salt ++ "
+                              "creationBytecode ++ abi.encode(owner, garden). The resulting address must equal "
+                              "WishGarden.pinnedBaseReceiver() on Ethereum; any other address is rejected there.",
+                "create2Deployer": base_transaction.CREATE2_DEPLOYER,
+                "create2SaltPreimage": base_transaction.SALT_PREIMAGE.decode(),
+                "create2Salt": "0x" + base_transaction.keccak256(base_transaction.SALT_PREIMAGE).hex(),
                 "compiler": "0.8.26", "evmVersion": "cancun", "optimizerRuns": 200,
                 "bytecodeHash": "none", "creationBytecode": artifact["bytecode"]["object"],
                 "sourceSHA256": sources,

@@ -142,7 +142,7 @@ contract WishGardenPurchasesTest is GardenTestBase {
         uint256 count = bound(countSeed, 1, 50);
         uint8 style = uint8(bound(styleSeed, 0, 6));
         WishGarden other = new WishGarden(OWNER);
-        _activate(other, address(receiver));
+        _activate(other, other.pinnedBaseReceiver());
         _buy(alice, 3, 0);
         _buyIn(other, alice, 3, 0);
         _buy(bob, count, style);

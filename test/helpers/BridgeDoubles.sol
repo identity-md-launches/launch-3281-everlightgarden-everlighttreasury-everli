@@ -11,6 +11,10 @@ import {
     Origin
 } from "../../src/bridge/IMDBridge.sol";
 
+interface IComposerDouble {
+    function lzCompose(address, bytes32, bytes calldata, address, bytes calldata) external payable;
+}
+
 contract EndpointDouble {
     uint32 public eid = 30101;
     uint256 public nativeFee = 1e14;
@@ -21,10 +25,33 @@ contract EndpointDouble {
     bytes32 public lastReceiver;
     address public lastSender;
 
-    function sendCompose(address to, bytes32, uint16, bytes calldata message) external {
+    mapping(bytes32 => bytes32) public composeQueue;
+
+    event ComposeDelivered(address from, address to, bytes32 guid, uint16 index);
+
+    function sendCompose(address to, bytes32 guid, uint16 index, bytes calldata message) external {
         lastMessage = message;
         lastReceiver = IMDBridge.asBytes32(to);
         lastSender = msg.sender;
+        composeQueue[keccak256(abi.encode(msg.sender, to, guid, index))] = keccak256(message);
+    }
+
+    /// @dev Same steps as EndpointV2.lzCompose (MessagingComposer): verify and clear the queued hash,
+    ///      forward the remaining gas (so the EVM's 63/64 rule applies), then log. The executor gives
+    ///      THIS call the compose gas option, not the composer directly.
+    function lzCompose(
+        address from,
+        address to,
+        bytes32 guid,
+        uint16 index,
+        bytes calldata message,
+        bytes calldata extraData
+    ) external payable {
+        bytes32 key = keccak256(abi.encode(from, to, guid, index));
+        require(composeQueue[key] == keccak256(message), "compose not queued");
+        composeQueue[key] = bytes32(uint256(1));
+        IComposerDouble(to).lzCompose{value: msg.value}(from, guid, message, msg.sender, extraData);
+        emit ComposeDelivered(from, to, guid, index);
     }
 
     function setEid(uint32 id) external {

@@ -14,6 +14,7 @@ import {IMDOFTDouble, BaseAdapterDouble} from "./helpers/BridgeDoubles.sol";
 contract BridgeTest is GardenTestBase {
     function test_disabledAtDeploymentAndRequiresAuthenticatedBaseReadiness() public {
         WishGarden fresh = new WishGarden(OWNER);
+        address pinned = fresh.pinnedBaseReceiver();
         assertFalse(fresh.activated());
         assertTrue(fresh.purchasesPaused());
         _rejectBuy(fresh, 1, 0, abi.encodeWithSelector(WishGarden.PurchasesDisabled.selector));
@@ -22,9 +23,9 @@ contract BridgeTest is GardenTestBase {
         fresh.activate();
         vm.prank(alice);
         vm.expectRevert();
-        fresh.configureBridge(address(receiver), EVIDENCE);
+        fresh.configureBridge(pinned, EVIDENCE);
         vm.prank(OWNER);
-        fresh.configureBridge(address(receiver), EVIDENCE);
+        fresh.configureBridge(pinned, EVIDENCE);
         vm.prank(OWNER);
         vm.expectRevert(EverlightBridgeQueue.BridgeNotReady.selector);
         fresh.activate();
@@ -32,19 +33,11 @@ contract BridgeTest is GardenTestBase {
             abi.encode(uint8(1), fresh.bridgeConfigHash(), uint256(0), bytes32(0), uint256(0));
         vm.expectRevert(EverlightBridgeQueue.InvalidMessage.selector);
         fresh.lzReceive(
-            Origin(30184, IMDBridge.asBytes32(address(receiver)), 1),
-            bytes32(uint256(55)),
-            ready,
-            address(this),
-            ""
+            Origin(30184, IMDBridge.asBytes32(pinned), 1), bytes32(uint256(55)), ready, address(this), ""
         );
         vm.prank(IMDBridge.ENDPOINT);
         fresh.lzReceive(
-            Origin(30184, IMDBridge.asBytes32(address(receiver)), 1),
-            bytes32(uint256(55)),
-            ready,
-            address(this),
-            ""
+            Origin(30184, IMDBridge.asBytes32(pinned), 1), bytes32(uint256(55)), ready, address(this), ""
         );
         vm.prank(OWNER);
         fresh.activate();
@@ -57,20 +50,30 @@ contract BridgeTest is GardenTestBase {
         fresh.activate();
     }
 
-    function test_configurationChangeFailsClosedAndClaimsStayAvailable() public {
+    /// @dev Changed with the behaviour (review finding 3a1155f9): a third-party OFT peer or
+    ///      enforced-options change no longer disables purchases; only burn dispatch fails closed
+    ///      on a custody-relevant change (peer), and resumes when the official peer is restored.
+    function test_configurationChangeFailsClosedForDispatchOnlyAndClaimsStayAvailable() public {
         _buy(alice, 2, 0);
+        vm.prank(OWNER);
+        uint256 id = garden.queueBurn(type(uint256).max);
         token.setPeer(IMDBridge.asBytes32(alice));
-        _rejectBuy(
-            garden, 1, 0, abi.encodeWithSelector(EverlightBridgeQueue.InvalidBridgeConfiguration.selector)
-        );
+        vm.prank(OWNER);
+        vm.expectRevert(EverlightBridgeQueue.InvalidBridgeConfiguration.selector);
+        garden.dispatchBurn{value: 1e14}(id);
+        assertEq(garden.burnReserved(), 0.6e18);
+        _buy(alice, 1, 0);
+        assertEq(garden.totalCandles(), 3);
         vm.prank(alice);
         garden.claimRewards();
-        assertEq(garden.totalRewardsClaimed(), 0.3e18);
+        assertEq(garden.totalRewardsClaimed(), 0.6e18);
         token.setPeer(IMDBridge.asBytes32(IMDBridge.BASE_ADAPTER));
         token.setOptions(hex"0003");
-        _rejectBuy(
-            garden, 1, 0, abi.encodeWithSelector(EverlightBridgeQueue.InvalidBridgeConfiguration.selector)
-        );
+        _buy(alice, 1, 0);
+        vm.prank(OWNER);
+        assertTrue(garden.dispatchBurn{value: 1e14}(id));
+        assertEq(garden.burnInTransit(), 0.6e18);
+        _assertSolvent();
     }
 
     function test_queueDustFailureRetryAndNoDoubleSend() public {

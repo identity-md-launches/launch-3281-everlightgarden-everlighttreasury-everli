@@ -96,7 +96,11 @@ contract EverlightBurnReceiver is Ownable2Step, ReentrancyGuard {
         payable
         nonReentrant
     {
-        _requireReady();
+        _requireBase();
+        // The adapter credited this delivery in its own earlier lzReceive. A later adapter peer or code
+        // change must not strand it unrecorded: authenticate by endpoint + adapter + message only, as
+        // retryBurn does. The full live route check still gates activate and announceReady.
+        if (!activated || IMD.codehash != tokenCodeHash) revert InvalidConfiguration();
         if (
             msg.sender != IMDBridge.ENDPOINT || from != IMDBridge.BASE_ADAPTER || msg.value != 0
                 || message.length != 108 || guid == bytes32(0) || deliveries[guid].status != Status.None

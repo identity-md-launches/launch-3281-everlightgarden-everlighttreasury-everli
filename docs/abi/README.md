@@ -12,7 +12,7 @@ Wishes are **public forever**, in Ethereum storage, transaction inputs and logs.
 
 1. Confirm chain 1, the accepted `WishGarden` address, `activated() == true` and `purchasesPaused() == false`. A pending bridge or deployment is not an active garden.
 2. Build equally sized `styles` and `wishes` arrays with 1–50 entries. Each style is 0–6; each wish is strict UTF-8, <=280 codepoints **and** <=1120 bytes. Approve exactly `styles.length * 10^18` IMD to the garden. The caller pays and is each candle's immutable beneficiary; there is no arbitrary payer or gift destination.
-3. Simulate `buyCandles(styles, wishes)` with zero ETH from the purchaser, estimate gas for the actual text, then submit. Maximum-count batches with long wishes can exceed the chain's gas ceiling; split them before submission. Separate transactions may partially succeed; each transaction is atomic. Do not treat a rejected signature, reverted call or pending transaction as a candle.
+3. Simulate `buyCandles(styles, wishes)` with zero ETH from the purchaser, estimate gas for the actual text, then submit. The count and text limits cannot be combined freely; see **Batch gas** below and split larger batches before submission. Separate transactions may partially succeed; each transaction is atomic. Do not treat a rejected signature, reverted call or pending transaction as a candle.
 4. Index `CandleCreated(candleId, purchaser, beneficiary, position, style, createdAt, wish)` and `CandlesPurchased`. Obtain IDs from confirmed receipt logs. Deduplicate logs by chain/transaction/log index and records by candle ID. Handle reorganizations by removing orphaned records and rereading canonical state. A new paid transaction intentionally buys new candles; there is no client idempotency nonce.
 
 `getCandle(id)` returns purchaser, beneficiary, Unix timestamp, style, zero-based position, and wish. IDs begin at 1 and position equals ID minus 1. `getCandles(firstId, limit)` returns records and the next ID; begin at 1. `candleIdsOf(purchaser, offset, limit)` returns IDs and next offset; begin at 0. Both page limits are 1–100. An end cursor returns an empty array; a cursor beyond the end reverts. Use a common block tag when paginating a snapshot. `totalCandles`, `paidCandles()` and `candleCountOf` count paid candles only. No operation loops over all historical records.
@@ -58,11 +58,13 @@ Ownership transfers require `transferOwnership` then the proposed owner's `accep
 totalBurnAllocated = burnQueued + burnReserved + burnInTransit + confirmedBurn
 ```
 
+The destination is fixed: `pinnedBaseReceiver()` is the only Base address burn IMD is ever sent to and the only sender whose readiness or burn confirmation is accepted. It is derived at construction from this repository's receiver bytecode, `CREATE2_DEPLOYER()`, `BASE_RECEIVER_SALT()`, the initial owner and the garden address; `configureBridge` reverts for any other address, and `baseReceiver()` equals it once configured. The owner has no way to name a wallet or another contract.
+
 `queueBurn(maximumAmount)` reserves up to the requested available amount, rounded down to `10^12` base units. `bridgeDust()` is the remaining queue modulo that unit. Ordinary 0.3 IMD candle shares are divisible by it. Each immutable job amount has a stable sequential ID. `BurnQueued` announces the ID and amount.
 
 `quoteBurn(id)` quotes the fixed destination, exact send/receive amount, official options and compose payload. `dispatchBurn(id)` requires the owner and the exact separately funded native fee, capped at 0.05 ETH. Ethereum IMD's OFT requires **no approval**: it debits the sending garden directly. The allowance is zero, not unlimited. Source balance reduction and both OFT receipt amounts must equal the job amount. IMD gas or rewards are never used for fees.
 
-Source status values: 0 None, 1 Queued, 2 Failed, 3 InTransit, 4 Completed. A failed attempted source send returns `false`, emits `BurnSendFailed`, keeps its IMD reserved and refunds attached native ETH. A retry uses the same ID. `failedBurnAmount` is a **subset of burnReserved**, not an extra liability. `totalSendFailures`, `totalSendRetries` and job attempts are cumulative counts. Quote/config/fee/low-gas precondition failures revert without an attempt. A success emits `BurnDispatched` and cannot be sent again. Dispatch remains available during a purchase pause.
+Source status values: 0 None, 1 Queued, 2 Failed, 3 InTransit, 4 Completed. A failed attempted source send returns `false`, emits `BurnSendFailed`, keeps its IMD reserved and refunds attached native ETH. A retry uses the same ID. `failedBurnAmount` is a **subset of burnReserved**, not an extra liability. `totalSendFailures`, `totalSendRetries` and job attempts are cumulative counts. Quote/config/fee/low-gas precondition failures revert without an attempt. A success emits `BurnDispatched` and cannot be sent again. Dispatch remains available during a purchase pause. `dispatchBurn` (not `buyCandles`, not `claimRewards`) reverts `InvalidBridgeConfiguration` while the Ethereum IMD OFT does not report the official Base peer, endpoint, debit mode, decimals and unchanged code; a change of its enforced executor options only changes the quoted fee.
 
 Base receives the official authenticated compose message, checks endpoint, adapter, Ethereum source EID, compose sender, GUID, job uniqueness and sufficient custody. Tokens are transferred by the official adapter before compose executes, possibly in another transaction; this is **not** an atomic callback balance-delta measurement. Correct amount attribution relies on the verified adapter's lossless credit and Base token transfer behavior. The contract separately verifies the exact balance and `totalSupply` reductions caused by its burn. It never burns all of its balance or counts donations.
 
@@ -71,3 +73,25 @@ Base `deliveries(guid)` tracks received amount, job ID, attempts, status and ack
 A successful Base burn emits `SupplyBurned`. Anyone may fund `sendBurnReceipt(guid)` with the exact quoted native fee. A reverted receipt send leaves it retryable; after a successful send, retry delivery of that same LayerZero packet instead of sending again. Only an authenticated receipt matching source job ID, GUID, amount and configuration changes Ethereum's `confirmedBurn` and emits `BurnConfirmed`. Receiving a duplicate or conflicting receipt cannot count twice. Show Base-burned-but-unacknowledged amounts separately; do not add them again to Ethereum confirmed burn.
 
 A source-chain OFT debit is bridge accounting, not an application-confirmed permanent global supply burn. Do not count it and the Base burn twice. Out-of-order deliveries are supported. Never rebridge an in-transit job because of a timeout. See [recovery instructions](../deployment.md).
+
+## Batch gas
+
+`buyCandles` accepts 1–50 candles and each wish may be up to 280 codepoints / 1120 bytes, but **both maxima cannot be used in one transaction**. Every wish byte is written to Ethereum storage and logs, and one Ethereum transaction may carry at most 16,777,216 gas (EIP-7825), below the block gas limit. A safe upper bound for the whole transaction, including calldata, is:
+
+```
+gas <= 300,000 + 170,000 * candles + 1,300 * (total wish bytes in the batch)
+```
+
+| Batch (measured, mocked token) | Gas | Fits one transaction |
+| --- | --- | --- |
+| 50 candles, empty wishes | 5.5M | yes |
+| 50 candles, 32 bytes each | 8.6M | yes |
+| 50 candles, 120 bytes each | 14.8M | yes |
+| 30 candles, 280 ASCII bytes each | 15.4M | yes |
+| 18 candles, 560 bytes each | 15.0M | yes |
+| 10 candles, 1120 bytes each | 14.5M | yes |
+| 1 candle, 1120 bytes | 1.6M | yes |
+| 50 candles, 280 ASCII bytes each | 25.5M | **no** |
+| 50 candles, 1120 bytes each | 71.7M | **no** |
+
+By the bound, 50 candles fit with at most about 6,130 wish bytes in total (about 122 bytes each), and full 1120-byte wishes fit at most 10 per transaction. An oversized batch cannot be mined; it never partially succeeds and costs nothing but the failed attempt. Clients must estimate gas for the actual text and split a batch that exceeds the limit into several purchases; IDs stay sequential in execution order and the reward order is the same as for one batch. The contract enforces no byte total of its own, so a later change of the chain's gas limits needs no contract change.

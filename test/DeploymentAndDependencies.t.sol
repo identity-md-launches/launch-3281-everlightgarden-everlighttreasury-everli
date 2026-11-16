@@ -80,7 +80,7 @@ contract DeploymentAndDependenciesTest is GardenTestBase {
         vm.prank(address(0));
         PeerAdmin(IMD).setPeer(30184, IMDBridge.asBytes32(IMDBridge.BASE_ADAPTER));
         WishGarden g = new WishGarden(OWNER);
-        _activate(g, address(receiver));
+        _activate(g, g.pinnedBaseReceiver());
         deal(IMD, alice, 2e18, true);
         uint8[] memory styles = new uint8[](2);
         string[] memory wishes = new string[](2);
@@ -101,7 +101,7 @@ contract DeploymentAndDependenciesTest is GardenTestBase {
         bytes memory packet = endpoint.lastMessage();
         // Actual OFTMsgCodec: receiver[32], amountSD[8], composeFrom[32], application payload[32].
         assertEq(packet.length, 104);
-        assertEq(_word(packet, 0), IMDBridge.asBytes32(address(receiver)));
+        assertEq(_word(packet, 0), IMDBridge.asBytes32(g.pinnedBaseReceiver()));
         assertEq(_word(packet, 40), IMDBridge.asBytes32(address(g)));
         assertEq(uint256(_word(packet, 72)), id);
         assertEq(endpoint.lastOptions(), IMDBridge.burnOptions());

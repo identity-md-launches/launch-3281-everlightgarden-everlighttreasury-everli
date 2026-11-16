@@ -3,6 +3,7 @@ pragma solidity 0.8.26;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {WishGardenTreasury} from "../WishGardenTreasury.sol";
+import {EverlightBurnReceiver} from "../base/EverlightBurnReceiver.sol";
 import {
     IMDBridge,
     IIMDOFT,
@@ -14,7 +15,11 @@ import {
     Origin
 } from "./IMDBridge.sol";
 
-/// @notice Restricted IMD -> official Base adapter -> immutable-after-activation burn receiver route.
+/// @notice Restricted IMD -> official Base adapter -> source-pinned burn-only receiver route.
+/// @dev The only possible destination is the CREATE2 address of this repository's EverlightBurnReceiver
+///      (its creation code is compiled into this contract's constructor) deployed on Base through the
+///      canonical deterministic deployer with this garden and its initial owner as constructor arguments.
+///      The owner cannot name another destination, and no other address can author confirmations.
 abstract contract EverlightBridgeQueue is WishGardenTreasury {
     enum BurnStatus {
         None,
@@ -32,12 +37,16 @@ abstract contract EverlightBridgeQueue is WishGardenTreasury {
     }
     uint256 public constant MAX_NATIVE_FEE = 0.05 ether;
     uint256 public constant SEND_GAS = 1_000_000;
+    /// @notice Canonical deterministic-deployment proxy (same address on Ethereum and Base).
+    address public constant CREATE2_DEPLOYER = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
+    bytes32 public constant BASE_RECEIVER_SALT = keccak256("EVERLIGHT GARDEN Base burn receiver v1");
+    /// @notice The fixed Base destination. Derived in the constructor without any external call.
+    address public immutable pinnedBaseReceiver;
     address public baseReceiver;
     bytes32 public bridgeEvidence;
     bytes32 public bridgeConfigHash;
     bytes32 public imdCodeHash;
     bytes32 public endpointCodeHash;
-    bytes32 public enforcedOptionsHash;
     bool public baseReady;
     bool public activated;
     bool public purchasesPaused = true;
@@ -69,23 +78,37 @@ abstract contract EverlightBridgeQueue is WishGardenTreasury {
     event BurnSendFailed(uint256 indexed jobId, uint32 attempt, bytes32 reasonHash);
     event BurnConfirmed(uint256 indexed jobId, bytes32 indexed guid, uint256 amount);
 
-    constructor(address owner_) WishGardenTreasury(owner_) {}
+    constructor(address owner_) WishGardenTreasury(owner_) {
+        bytes32 initCodeHash = keccak256(
+            bytes.concat(type(EverlightBurnReceiver).creationCode, abi.encode(owner_, address(this)))
+        );
+        pinnedBaseReceiver = address(
+            uint160(
+                uint256(
+                    keccak256(
+                        abi.encodePacked(bytes1(0xff), CREATE2_DEPLOYER, BASE_RECEIVER_SALT, initCodeHash)
+                    )
+                )
+            )
+        );
+    }
 
-    /// @notice Owner supplies the later Base deployment and reviewed evidence before any purchase.
-    /// @dev Token, bridge, endpoints, chains, gas options, fee ceiling and all rates are fixed in source.
+    /// @notice Owner confirms the source-pinned Base receiver and reviewed evidence before any purchase.
+    /// @dev `receiver` MUST equal pinnedBaseReceiver: the owner cannot choose the destination. Token,
+    ///      bridge, endpoints, chains, gas options, fee ceiling and all rates are fixed in source.
     function configureBridge(address receiver, bytes32 evidenceHash) external nonReentrant onlyOwner {
         if (activated) revert ConfigurationFrozen();
         _requireIMD();
         if (
-            receiver == address(0) || receiver == IMDBridge.BASE_IMD || receiver == IMDBridge.BASE_ADAPTER
-                || receiver == IMDBridge.ENDPOINT || evidenceHash == bytes32(0)
+            receiver != pinnedBaseReceiver || receiver == address(0) || receiver == IMDBridge.BASE_IMD
+                || receiver == IMDBridge.BASE_ADAPTER || receiver == IMDBridge.ENDPOINT
+                || evidenceHash == bytes32(0)
         ) revert InvalidBridgeConfiguration();
         _checkOfficialRoute();
         baseReceiver = receiver;
         bridgeEvidence = evidenceHash;
         imdCodeHash = IMD.codehash;
         endpointCodeHash = IMDBridge.ENDPOINT.codehash;
-        enforcedOptionsHash = keccak256(IIMDOFT(IMD).enforcedOptions(IMDBridge.BASE_EID, 2));
         bridgeConfigHash =
             keccak256(abi.encode(uint256(1), address(this), uint256(8453), receiver, evidenceHash));
         baseReady = false;
@@ -259,13 +282,14 @@ abstract contract EverlightBridgeQueue is WishGardenTreasury {
         ) revert InvalidBridgeConfiguration();
     }
 
+    /// @dev Custody-relevant route only: token, endpoint, peer, debit mode, decimals and code hashes.
+    ///      Enforced executor options belong to the IMD OFT owner and only change the quoted fee, which
+    ///      dispatchBurn bounds by MAX_NATIVE_FEE; they are deliberately not part of the frozen route.
+    ///      Purchases never call this: a purchase moves IMD into this contract and touches no bridge.
     function _checkFrozenRoute() internal view {
         _requireIMD();
         _checkOfficialRoute();
-        if (
-            IMD.codehash != imdCodeHash || IMDBridge.ENDPOINT.codehash != endpointCodeHash
-                || keccak256(IIMDOFT(IMD).enforcedOptions(IMDBridge.BASE_EID, 2)) != enforcedOptionsHash
-        ) {
+        if (IMD.codehash != imdCodeHash || IMDBridge.ENDPOINT.codehash != endpointCodeHash) {
             revert InvalidBridgeConfiguration();
         }
     }
