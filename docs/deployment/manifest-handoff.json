@@ -1,26 +1,18 @@
 {
+  "status": "For the later manifest step; no application deployment has been performed by this contribution",
   "kind": "evm_contracts",
-  "contracts": [
-    {
-      "contract": "WishGardenBurnSink",
-      "constructorArgs": []
-    },
-    {
-      "contract": "WishGardenTreasury",
-      "constructorArgs": [
-        "$owner",
-        "$contract:WishGardenBurnSink",
-        "$owner",
-        "0x48E4E74fE1d0c14404cEB57B9fec5b21329C6ec9"
-      ]
-    },
+  "chainId": 1,
+  "applications": [
     {
       "contract": "WishGarden",
-      "constructorArgs": [
-        "$owner",
-        "$contract:WishGardenTreasury"
-      ]
+      "source": "src/WishGarden.sol",
+      "constructorArgs": ["0x48E4E74fE1d0c14404cEB57B9fec5b21329C6ec9"],
+      "constructorTypes": ["address"],
+      "abi": "docs/abi/WishGarden.json",
+      "initialState": "activated=false, purchasesPaused=true"
     }
   ],
-  "notes": "Source assignment handoff for the separate generated launch.json assignment and independent review. Ethereum chain 1; $owner resolves to 0x48E4E74fE1d0c14404cEB57B9fec5b21329C6ec9. Deploy these three application contracts only, each with zero ETH. Existing IMD has 18 decimals and no public burn: 30% is permanently locked in WishGardenBurnSink without reducing totalSupply; the 50/10/10 buckets remain separate. After deployment the owner must bind the confirmed WishGarden address once in WishGardenTreasury and separately confirm the pinned official NFT collection with a reviewed evidence hash. Before these actions paid purchases and free claims respectively revert. Services supply publication, policy, signed artifact linkage, attestation, admission, deployment and confirmed addresses. This handoff is not an attestation or deployment receipt."
+  "excludedFromEthereumLaunch": ["EverlightBurnReceiver", "WishGardenTreasury", "EverlightBridgeQueue", "all test fixtures and libraries"],
+  "basePackage": "docs/base/deployment-package.json",
+  "notes": "Deploy only WishGarden. Treasury and bridge queue are abstract internal components. No token, NFT, free entitlement, sink, pool, website or proxy. Base receiver is a later separate owner deployment. The accepted source commit, final launch.json, source publication and confirmed Ethereum address are produced by the network's later steps. This file is a handoff, not a launch manifest or deployment receipt."
 }

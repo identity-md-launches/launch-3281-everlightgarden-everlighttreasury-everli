@@ -1,0 +1,345 @@
+{
+  "observedAt": "2026-11-16T11:00:24.893232+00:00",
+  "sourceVerification": [
+    {
+      "name": "base",
+      "chainId": 8453,
+      "address": "0xFF0C532FDB8Cd566Ae169C1CB157ff2Bdc83E105",
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0xFF0C532FDB8Cd566Ae169C1CB157ff2Bdc83E105?fields=all",
+      "matchId": "11936",
+      "runtimeMatch": "match",
+      "sourceContract": "src/FrenPetToken.sol:FrenPetToken",
+      "runtimeHash": "0x15021fda4613ae853a7e3199f62df75e6f547ca11d32df53c0b1616f4a80ef4f",
+      "runtimeSize": 12331,
+      "immutableValues": {
+        "immutables": {
+          "2080": "0x000000000000000000000000327df1e6de05895d2ab08513aadd9313fe505d86",
+          "2082": "0x00000000000000000000000029b3a7869e3662d00aabd89a8ee74b2f703a6a66"
+        },
+        "cborAuxdata": {
+          "1": "0xa26469706673582212200a43e7930d559ad951d357dadc8440c5db9acd98388c340a57f72cdcbba7379c64736f6c63430008130033"
+        }
+      },
+      "liveRuntimeMatchesVerified": true
+    },
+    {
+      "name": "adapter",
+      "chainId": 8453,
+      "address": "0xab152db8aac047b6757ffcf495ffe88d7712690a",
+      "sourcify": "https://sourcify.dev/server/v2/contract/8453/0xab152db8aac047b6757ffcf495ffe88d7712690a?fields=all",
+      "matchId": "9956351",
+      "runtimeMatch": "exact_match",
+      "sourceContract": "src/FrenPetOFTAdapter.sol:FrenPetOFTAdapter",
+      "runtimeHash": "0x1ad0c62178c048836ae25bc3c56a69579ae1ac8498209281c36acd344063e4da",
+      "runtimeSize": 17717,
+      "immutableValues": {
+        "immutables": {
+          "1386": "0x0000000000000000000000001a44076050125825900e736c501f859c50fe728c",
+          "2631": "0x000000000000000000000000ff0c532fdb8cd566ae169c1cb157ff2bdc83e105",
+          "2783": "0x000000000000000000000000000000000000000000000000000000e8d4a51000"
+        }
+      },
+      "liveRuntimeMatchesVerified": true
+    },
+    {
+      "name": "ethereum",
+      "chainId": 1,
+      "address": "0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7",
+      "sourcify": "https://sourcify.dev/server/v2/contract/1/0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7?fields=all",
+      "matchId": "27277375",
+      "runtimeMatch": "exact_match",
+      "sourceContract": "src/BridgedFP.sol:BridgedFP",
+      "runtimeHash": "0x79a1ae149d27d4aae006d4dd75cb834222c9623799bbf34359428aaf66fec3bf",
+      "runtimeSize": 22990,
+      "immutableValues": {
+        "immutables": {
+          "1386": "0x0000000000000000000000001a44076050125825900e736c501f859c50fe728c",
+          "2778": "0x000000000000000000000000000000000000000000000000000000e8d4a51000"
+        }
+      }
+    }
+  ],
+  "ethereumReads": {
+    "endpoint()(address)": {
+      "url": "https://api.routescan.io/v2/network/mainnet/evm/1/etherscan/api?module=proxy&action=eth_call&to=0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7&data=0x5e280f11&tag=latest",
+      "result": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x0000000000000000000000001a44076050125825900e736c501f859c50fe728c"
+      }
+    },
+    "peers(uint32)(bytes32)": {
+      "url": "https://api.routescan.io/v2/network/mainnet/evm/1/etherscan/api?module=proxy&action=eth_call&to=0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7&data=0xbb0b6a5300000000000000000000000000000000000000000000000000000000000075e8&tag=latest",
+      "result": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x000000000000000000000000ab152db8aac047b6757ffcf495ffe88d7712690a"
+      }
+    },
+    "decimalConversionRate()(uint256)": {
+      "url": "https://api.routescan.io/v2/network/mainnet/evm/1/etherscan/api?module=proxy&action=eth_call&to=0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7&data=0x963efcaa&tag=latest",
+      "result": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x000000000000000000000000000000000000000000000000000000e8d4a51000"
+      }
+    },
+    "approvalRequired()(bool)": {
+      "url": "https://api.routescan.io/v2/network/mainnet/evm/1/etherscan/api?module=proxy&action=eth_call&to=0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7&data=0x9f68b964&tag=latest",
+      "result": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    }
+  },
+  "baseReads": {
+    "observedAt": "2026-11-16T10:54:00.591106+00:00",
+    "rpc": "https://base-rpc.publicnode.com",
+    "blockTag": "latest; independent calls",
+    "reads": [
+      {
+        "address": "0xab152db8aac047b6757ffcf495ffe88d7712690a",
+        "signature": "token()(address)",
+        "argument": null,
+        "data": "0xfc0c546a",
+        "response": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "result": "0x000000000000000000000000ff0c532fdb8cd566ae169c1cb157ff2bdc83e105"
+        }
+      },
+      {
+        "address": "0xab152db8aac047b6757ffcf495ffe88d7712690a",
+        "signature": "endpoint()(address)",
+        "argument": null,
+        "data": "0x5e280f11",
+        "response": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "result": "0x0000000000000000000000001a44076050125825900e736c501f859c50fe728c"
+        }
+      },
+      {
+        "address": "0xab152db8aac047b6757ffcf495ffe88d7712690a",
+        "signature": "peers(uint32)(bytes32)",
+        "argument": "30101",
+        "data": "0xbb0b6a530000000000000000000000000000000000000000000000000000000000007595",
+        "response": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "result": "0x000000000000000000000000d34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7"
+        }
+      },
+      {
+        "address": "0xab152db8aac047b6757ffcf495ffe88d7712690a",
+        "signature": "decimalConversionRate()(uint256)",
+        "argument": null,
+        "data": "0x963efcaa",
+        "response": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "result": "0x000000000000000000000000000000000000000000000000000000e8d4a51000"
+        }
+      },
+      {
+        "address": "0xFF0C532FDB8Cd566Ae169C1CB157ff2Bdc83E105",
+        "signature": "symbol()(string)",
+        "argument": null,
+        "data": "0x95d89b41",
+        "response": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "result": "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000084672656e20506574000000000000000000000000000000000000000000000000"
+        }
+      },
+      {
+        "address": "0xFF0C532FDB8Cd566Ae169C1CB157ff2Bdc83E105",
+        "signature": "decimals()(uint8)",
+        "argument": null,
+        "data": "0x313ce567",
+        "response": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "result": "0x0000000000000000000000000000000000000000000000000000000000000012"
+        }
+      },
+      {
+        "address": "0xFF0C532FDB8Cd566Ae169C1CB157ff2Bdc83E105",
+        "signature": "preMigrationPhase()(bool)",
+        "argument": null,
+        "data": "0x0e922ca7",
+        "response": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "result": "0x0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      },
+      {
+        "address": "0xFF0C532FDB8Cd566Ae169C1CB157ff2Bdc83E105",
+        "signature": "limitsInEffect()(bool)",
+        "argument": null,
+        "data": "0x4a62bb65",
+        "response": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "result": "0x0000000000000000000000000000000000000000000000000000000000000001"
+        }
+      },
+      {
+        "address": "0xFF0C532FDB8Cd566Ae169C1CB157ff2Bdc83E105",
+        "signature": "owner()(address)",
+        "argument": null,
+        "data": "0x8da5cb5b",
+        "response": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "result": "0x00000000000000000000000054c4dd8c2e124c65f55e1e096ab1fb6543e1206c"
+        }
+      }
+    ]
+  },
+  "baseAdditionalReads": [
+    {
+      "address": "0xFF0C532FDB8Cd566Ae169C1CB157ff2Bdc83E105",
+      "signature": "maxWallet()(uint256)",
+      "arguments": [],
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "eth_call",
+        "params": [
+          {
+            "to": "0xFF0C532FDB8Cd566Ae169C1CB157ff2Bdc83E105",
+            "data": "0xf8b45b05"
+          },
+          "latest"
+        ],
+        "id": 1
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x00000000000000000000000000002270352750f091109d3deb8dac0000000000"
+      }
+    },
+    {
+      "address": "0xFF0C532FDB8Cd566Ae169C1CB157ff2Bdc83E105",
+      "signature": "tradingActive()(bool)",
+      "arguments": [],
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "eth_call",
+        "params": [
+          {
+            "to": "0xFF0C532FDB8Cd566Ae169C1CB157ff2Bdc83E105",
+            "data": "0xbbc0c742"
+          },
+          "latest"
+        ],
+        "id": 1
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x0000000000000000000000000000000000000000000000000000000000000001"
+      }
+    },
+    {
+      "address": "0xFF0C532FDB8Cd566Ae169C1CB157ff2Bdc83E105",
+      "signature": "blacklistRenounced()(bool)",
+      "arguments": [],
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "eth_call",
+        "params": [
+          {
+            "to": "0xFF0C532FDB8Cd566Ae169C1CB157ff2Bdc83E105",
+            "data": "0x3dc599ff"
+          },
+          "latest"
+        ],
+        "id": 1
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    {
+      "address": "0xFF0C532FDB8Cd566Ae169C1CB157ff2Bdc83E105",
+      "signature": "isBlacklisted(address)(bool)",
+      "arguments": [
+        "0xab152db8aac047b6757ffcf495ffe88d7712690a"
+      ],
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "eth_call",
+        "params": [
+          {
+            "to": "0xFF0C532FDB8Cd566Ae169C1CB157ff2Bdc83E105",
+            "data": "0xfe575a87000000000000000000000000ab152db8aac047b6757ffcf495ffe88d7712690a"
+          },
+          "latest"
+        ],
+        "id": 1
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    {
+      "address": "0xFF0C532FDB8Cd566Ae169C1CB157ff2Bdc83E105",
+      "signature": "balanceOf(address)(uint256)",
+      "arguments": [
+        "0xab152db8aac047b6757ffcf495ffe88d7712690a"
+      ],
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "eth_call",
+        "params": [
+          {
+            "to": "0xFF0C532FDB8Cd566Ae169C1CB157ff2Bdc83E105",
+            "data": "0x70a08231000000000000000000000000ab152db8aac047b6757ffcf495ffe88d7712690a"
+          },
+          "latest"
+        ],
+        "id": 1
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x000000000000000000000000000000000000000000038f91e401c57f1acb7000"
+      }
+    },
+    {
+      "address": "0x1a44076050125825900e736c501f859c50fe728c",
+      "signature": "eid()(uint32)",
+      "arguments": [],
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "eth_call",
+        "params": [
+          {
+            "to": "0x1a44076050125825900e736c501f859c50fe728c",
+            "data": "0x416ecebf"
+          },
+          "latest"
+        ],
+        "id": 1
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": "0x00000000000000000000000000000000000000000000000000000000000075e8"
+      }
+    }
+  ],
+  "ethereumLiveRuntime": {
+    "url": "https://api.routescan.io/v2/network/mainnet/evm/1/etherscan/api?module=proxy&action=eth_getCode&address=0xd34a99bc0f67ae1bbd63c660e6d0b0dd03e263b7&tag=latest",
+    "hash": "0x79a1ae149d27d4aae006d4dd75cb834222c9623799bbf34359428aaf66fec3bf",
+    "matchesVerified": true
+  }
+}

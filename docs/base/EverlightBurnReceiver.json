@@ -8,17 +8,7 @@
         "internalType": "address"
       },
       {
-        "name": "burnSink_",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "operationsRecipient_",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "founderRecipient_",
+        "name": "ethereumGarden_",
         "type": "address",
         "internalType": "address"
       }
@@ -27,7 +17,7 @@
   },
   {
     "type": "function",
-    "name": "BURN_ALLOCATION_PER_CANDLE",
+    "name": "BURN_GAS",
     "inputs": [],
     "outputs": [
       {
@@ -40,52 +30,13 @@
   },
   {
     "type": "function",
-    "name": "CANDLE_PRICE",
+    "name": "ETHEREUM_IMD",
     "inputs": [],
     "outputs": [
       {
         "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "CHAIN_ID",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "ECOSYSTEM_PER_CANDLE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "FOUNDER_PER_CANDLE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "stateMutability": "view"
@@ -105,33 +56,7 @@
   },
   {
     "type": "function",
-    "name": "IMD_DECIMALS",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint8",
-        "internalType": "uint8"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "MAX_BATCH_SIZE",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "OPERATIONS_PER_CANDLE",
+    "name": "MAX_NATIVE_FEE",
     "inputs": [],
     "outputs": [
       {
@@ -151,25 +76,12 @@
   },
   {
     "type": "function",
-    "name": "accountedBalance",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "bindGarden",
+    "name": "activate",
     "inputs": [
       {
-        "name": "garden_",
-        "type": "address",
-        "internalType": "address"
+        "name": "evidence",
+        "type": "bytes32",
+        "internalType": "bytes32"
       }
     ],
     "outputs": [],
@@ -177,120 +89,192 @@
   },
   {
     "type": "function",
-    "name": "burnSink",
+    "name": "activated",
     "inputs": [],
     "outputs": [
       {
         "name": "",
-        "type": "address",
-        "internalType": "address"
+        "type": "bool",
+        "internalType": "bool"
       }
     ],
     "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "claimFounder",
+    "name": "adapterCodeHash",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "announceReady",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "configHash",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "deliveries",
     "inputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "jobId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
       {
         "name": "amount",
         "type": "uint256",
         "internalType": "uint256"
+      },
+      {
+        "name": "attempts",
+        "type": "uint32",
+        "internalType": "uint32"
+      },
+      {
+        "name": "status",
+        "type": "uint8",
+        "internalType": "enum EverlightBurnReceiver.Status"
+      },
+      {
+        "name": "acknowledged",
+        "type": "bool",
+        "internalType": "bool"
       }
     ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
+    "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "claimOperations",
+    "name": "endpointCodeHash",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "ethereumGarden",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "evidenceHash",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "failedBurn",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "jobGuids",
     "inputs": [
       {
-        "name": "amount",
+        "name": "",
         "type": "uint256",
         "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "lzCompose",
+    "inputs": [
+      {
+        "name": "from",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "guid",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "message",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "",
+        "type": "bytes",
+        "internalType": "bytes"
       }
     ],
     "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "ecosystemBalance",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "founderBalance",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "founderRecipient",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "garden",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "operationsBalance",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "operationsRecipient",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
+    "stateMutability": "payable"
   },
   {
     "type": "function",
@@ -301,6 +285,19 @@
         "name": "",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "pendingBurn",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -320,26 +317,52 @@
   },
   {
     "type": "function",
-    "name": "recordPayment",
+    "name": "performBurn",
     "inputs": [
       {
-        "name": "purchaser",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "firstCandleId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "quantity",
+        "name": "amount",
         "type": "uint256",
         "internalType": "uint256"
       }
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "quoteReceipt",
+    "inputs": [
+      {
+        "name": "kind",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "guid",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct MessagingFee",
+        "components": [
+          {
+            "name": "nativeFee",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "lzTokenFee",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -350,7 +373,46 @@
   },
   {
     "type": "function",
-    "name": "totalEcosystemWithdrawn",
+    "name": "retryBurn",
+    "inputs": [
+      {
+        "name": "guid",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "sendBurnReceipt",
+    "inputs": [
+      {
+        "name": "guid",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "tokenCodeHash",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "totalBurned",
     "inputs": [],
     "outputs": [
       {
@@ -363,7 +425,7 @@
   },
   {
     "type": "function",
-    "name": "totalFounderClaimed",
+    "name": "totalFailures",
     "inputs": [],
     "outputs": [
       {
@@ -376,7 +438,7 @@
   },
   {
     "type": "function",
-    "name": "totalIMDLocked",
+    "name": "totalReceived",
     "inputs": [],
     "outputs": [
       {
@@ -389,7 +451,7 @@
   },
   {
     "type": "function",
-    "name": "totalOperationsClaimed",
+    "name": "totalRetries",
     "inputs": [],
     "outputs": [
       {
@@ -399,32 +461,6 @@
       }
     ],
     "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "totalPayments",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "totalSupplyBurned",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "pure"
   },
   {
     "type": "function",
@@ -440,101 +476,51 @@
     "stateMutability": "nonpayable"
   },
   {
-    "type": "function",
-    "name": "unallocatedBalance",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "withdrawEcosystem",
-    "inputs": [
-      {
-        "name": "destination",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
     "type": "event",
-    "name": "BucketWithdrawn",
+    "name": "BurnFailed",
     "inputs": [
       {
-        "name": "bucket",
-        "type": "uint8",
+        "name": "guid",
+        "type": "bytes32",
         "indexed": true,
-        "internalType": "enum WishGardenTreasury.Bucket"
+        "internalType": "bytes32"
       },
       {
-        "name": "caller",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "destination",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
+        "name": "attempt",
+        "type": "uint32",
         "indexed": false,
-        "internalType": "uint256"
+        "internalType": "uint32"
+      },
+      {
+        "name": "reasonHash",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
       }
     ],
     "anonymous": false
   },
   {
     "type": "event",
-    "name": "BurnAllocationLocked",
+    "name": "BurnReceived",
     "inputs": [
       {
-        "name": "sink",
-        "type": "address",
+        "name": "guid",
+        "type": "bytes32",
         "indexed": true,
-        "internalType": "address"
+        "internalType": "bytes32"
+      },
+      {
+        "name": "jobId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
       },
       {
         "name": "amount",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
-      },
-      {
-        "name": "cumulativeLocked",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "GardenBound",
-    "inputs": [
-      {
-        "name": "garden",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
       }
     ],
     "anonymous": false
@@ -579,52 +565,72 @@
   },
   {
     "type": "event",
-    "name": "PaymentAllocated",
+    "name": "ReceiptSent",
     "inputs": [
       {
-        "name": "purchaser",
-        "type": "address",
+        "name": "burnGuid",
+        "type": "bytes32",
         "indexed": true,
-        "internalType": "address"
+        "internalType": "bytes32"
       },
       {
-        "name": "firstCandleId",
+        "name": "messageGuid",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "kind",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "uint8"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ReceiverActivated",
+    "inputs": [
+      {
+        "name": "configHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "evidenceHash",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "SupplyBurned",
+    "inputs": [
+      {
+        "name": "guid",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "jobId",
         "type": "uint256",
         "indexed": true,
         "internalType": "uint256"
       },
       {
-        "name": "quantity",
+        "name": "amount",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
       },
       {
-        "name": "payment",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "locked",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "ecosystem",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "operations",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "founder",
+        "name": "cumulativeBurned",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -634,68 +640,32 @@
   },
   {
     "type": "error",
-    "name": "GardenAlreadyBound",
+    "name": "InexactBurn",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "GardenNotConfigured",
+    "name": "InsufficientExecutionGas",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "IMDUnavailable",
+    "name": "InvalidConfiguration",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "InexactTransfer",
+    "name": "InvalidDelivery",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "InsufficientBucketBalance",
+    "name": "InvalidFee",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "InsufficientFunding",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidAddress",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidBurnSink",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidGarden",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidQuantity",
-    "inputs": [
-      {
-        "name": "quantity",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "InvalidWithdrawal",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "OnlyGarden",
+    "name": "OnlySelf",
     "inputs": []
   },
   {
@@ -732,40 +702,7 @@
   },
   {
     "type": "error",
-    "name": "SafeERC20FailedOperation",
-    "inputs": [
-      {
-        "name": "token",
-        "type": "address",
-        "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "UnauthorizedBeneficiary",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "UnexpectedIMDDecimals",
-    "inputs": [
-      {
-        "name": "actualDecimals",
-        "type": "uint8",
-        "internalType": "uint8"
-      }
-    ]
-  },
-  {
-    "type": "error",
     "name": "WrongChain",
-    "inputs": [
-      {
-        "name": "actualChainId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
+    "inputs": []
   }
 ]

@@ -1,48 +1,65 @@
-# Validation and author security review
+# Local validation and adversarial review
 
-This is implementation validation by the contributor, **not** the independent adversarial review required before release. The separate reviewer must assess the accepted source and final `launch.json` together, especially owner/recipient arguments, dependency evidence and permanent-lock disclosures. No production transaction was sent.
+These results are implementation/model evidence, **not independent network approval**. The final independent reviewer must assess the accepted source, manifest, privileged arguments and activation evidence before deployment/activation. No source publication, contract deployment, signing or real-fund purchase was performed here.
 
-## Local results
+## Reproduction
 
-Solidity 0.8.26, Foundry 1.8.5. The exact requested fuzz seed was used: `0x97c94f0a2c3e7194aefb08855d149d84c076632dfc983f4f1421acdc6c07edef`.
+Pinned project configuration is unchanged: Solidity 0.8.26, Cancun, optimizer enabled/200 runs, bytecode metadata hash none; existing OpenZeppelin/forge-std only. Local Foundry is 1.8.3. Tests use no environment settings, filesystem permissions, fork, external service or downloaded runtime dependency. The assignment seed is:
 
-- 61 Foundry tests passed (including the grouped stateful invariant suite); zero failures/skips. Three parameterized fuzz tests ran 512 inputs each.
-- The invariant group checked two invariants over 128 sequences, depth 64: 8,192 handler calls, zero unexpected reverts. Actions mix purchases, free claims, NFT transfers, partial withdrawals, and donations.
-- Measured maximum-batch call gas: 50 paid candles approximately **4,015,685**; 50 free claims approximately **6,167,827**. Both tested below 8 million. These are local in-transaction measurements with setup warming some state, not mainnet fee quotes or transaction gas limits. Estimate each production call with margin. The 10,001-record test uses many separate bounded calls; it is not one supported purchase transaction.
-- `forge build --sizes`, `forge fmt --check`, and `python3 scripts/export-abis.py --check` passed. A final `forge test --offline` run with the same requested seed also passed all 61 tests. Tests use no environment variables or filesystem permissions.
+```
+0x9e56a8a08f479c4debd98dee24655411b47d3a5f10f757d2dd0fcb595fd4d87f
+```
 
-Application runtime / initcode sizes from the pinned compiler:
+Run:
 
-| Contract | Runtime bytes | Initcode bytes |
+```sh
+forge build
+FOUNDRY_FUZZ_SEED=0x9e56a8a08f479c4debd98dee24655411b47d3a5f10f757d2dd0fcb595fd4d87f forge test
+python3 scripts/export-abis.py --check
+```
+
+Final command results are recorded after the final source build. Parameterized tests use 512 cases. The specification model uses 128 sequences, depth 64 (8,192 actions), with fail-on-revert enabled. A 10,001-candle test disables test-harness gas metering while performing many **bounded** purchases; it is not evidence that one transaction can create 10,001 candles. Wallet-gas helpers separately compare results/logs at the lowest successful call gas against calls with spare gas.
+
+## Recorded final results
+
+- `forge build --sizes`: passed, with no external library link references.
+- `forge test --summary` with the exact assignment seed: **49 passed, 0 failed, 0 skipped**, across eight suites. Seven fuzz properties ran 512 cases each; the invariant model completed **128 runs / 8,192 calls / 0 reverts**.
+- `python3 scripts/export-abis.py --check`: passed for the Ethereum ABI, separate Base ABI and reproducible Base package.
+- `python3 test/base_package_test.py`: two offline helper tests passed, including constructor encoding comparison with `cast abi-encode`, required inputs, fixed chain/owner/value, and invalid parameter rejection. No test transaction was written to the deployment package or broadcast.
+
+| Application | Runtime bytes | Initcode bytes before arguments |
 | --- | ---: | ---: |
-| `WishGardenBurnSink` | 324 | 352 |
-| `WishGardenTreasury` | 6,508 | 7,162 |
-| `WishGarden` | 7,854 | 8,288 |
+| WishGarden (Ethereum) | 18,534 | 18,834 |
+| EverlightBurnReceiver (separate Base package) | 8,385 | 8,777 |
 
-All application runtimes are below 24,576 bytes, initcode is below 49,152 bytes, and link-reference maps are empty. The manifest handoff's argument counts/types were checked against built constructor ABIs.
+Both are below EIP-170/EIP-3860 limits. Foundry lint warnings on exact balance comparisons, bounded loop validation, bridge-unit truncation, guarded calls/events and restoration after failed external subcalls were reviewed against behavior; their relevant failure modes are exercised by the tests. Exact comparisons and queue rounding are deliberate requirements, not relaxed to suppress warnings.
 
-## Coverage
+## Review of custody and privileges
 
-| Area | Success and failure evidence |
+| Attack / requirement | Evidence and conclusion |
 | --- | --- |
-| Economy | 1/10/50 purchases, seven styles, exact decimal math, exact allowance consumption, fuzzed quantity/split conservation |
-| Atomicity | Insufficient allowance/balance, false-return/no-op/taxed ERC20, sender surcharge, treasury forwarding failure, final sink transfer failure; all records and ledgers roll back |
-| Persistence | 10,001 actual records, unchanged old record after ten years/later purchases, contiguous stable slots, purchaser/global pagination, paid/free interleaving |
-| NFT | Actual verified runtime fixture; owner-only one-time confirmation; missing/wrong code; ERC165 checks; NFT 0; current ownership; operators rejected; transfer before/after consumption; duplicate/invalid atomic batches; 50-claim boundary |
-| Treasury | Distinct bucket permissions, partial withdrawals, overdraws, invalid destinations, failed-transfer rollback, immutable recipients across owner transfer, nonwithdrawable burn allocation, donation separation |
-| Reentrancy | Reentrant paid purchase, cross-function free claim, authorized owner's nested treasury withdrawal rejected by guard; outer call settles once |
-| Launch | Constructors on an empty chain in one factory call, explicit ownership, static dependencies, zero-address errors, EIP-170 sizes, no reachable delegatecall/callcode/selfdestruct |
-| IMD semantics | Live verified bytecode fixture reports 18 decimals, rejects public burn/burnFrom and zero-address transfer, preserves supply when locking the allocation |
-| Stateful conservation | No supply change; every IMD accounted across buyers/recipients/garden/treasury/sink; exact four allocations; balances remain solvent; donations distinct; claims cannot reset on transfers |
+| Owner drains earlier-candle rewards | Two-candle regression produces 0.3 IMD claimable and exactly 1.1 IMD owner buckets; all buckets exhausted still leave reward and burn custody. Owner has no reward/dust/burn sweep. |
+| New weight earns old rewards | Batch vs sequential fuzz and independent per-candle model agree. Allocation precedes weight addition, dust is not recycled, fractions survive repeated claims. |
+| Account split/rounding overpayment | Model checks sum of lifetime scaled entitlements plus division dust exactly equals funded reward allocation times precision. Claims floor only accumulated account entitlement. |
+| Reentry / partial transfer | Guarded purchase/claim/withdraw/bridge/composer paths; caller-only SafeERC20 pull and both-side exact transfer checks. Faults and callbacks revert/settle exactly once. |
+| Wish/NFT manipulation | All free/NFT/bind/recordPayment selectors reject. Record/text immutability is structural; strict UTF-8 tests include scalar bounds, overlongs, surrogates, truncation and full batch rollback. |
+| Forged burn or arbitrary destination | No arbitrary target, call payload, token rescue or owner-completion method. Exact fixed OFT receipt and source debit; endpoint/peer/config/job/GUID/amount authenticated acknowledgements. |
+| Duplicate, delayed or reordered burn delivery | GUID and job replay guards, immutable job amounts, out-of-order three-job tests and return receipt replay. In-transit jobs cannot be resent on Ethereum. |
+| Bridge/burn failure hides lost custody | Source self-call isolates external send and receipt checks atomically; failures preserve reservation/refund native fee. Base self-call isolates exact burn checks; failed burns retain funded pending amounts. |
+| Gas starvation appears to succeed without trying | Explicit EIP-150 headroom plus completion margin; source dispatch and Base compose tested at wallet-minimum gas, Base compose at advertised 500,000 gas, underfunded compose reverts. |
+| Fake sink burn | Actual deployed Base token runtime reduces both balance and totalSupply locally. Actual deployed Ethereum OFT debit remains unconfirmed until Base receipt. Mock results are identified separately. |
+| Factory traps ownership / deployment fails on empty chain | Explicit constructor owner, no dependency calls; empty-code factory rehearsal, ABI static arguments, bounded runtime/initcode, no linked external library and protected-style reachable-opcode scan. |
 
-## Reviewed constraints and trust boundaries
+All application source was reviewed: GardenEconomy, WishGarden, WishGardenTreasury, Utf8Wish, IMDBridge ABI/options, EverlightBridgeQueue and EverlightBurnReceiver. The original imported audit was assessed and its corrected/qualified findings are listed in ADAPTATION.md. The final local review identified and fixed an unnecessary recovery dependency: already authenticated, funded Base deliveries now remain burn-retryable after a later bridge peer change, since only the fixed token is needed. A regression exercises the peer change, retry and acknowledgement. It also verified checks-effects-interactions around isolated send/burn subcalls, with failed-subcall custody restored before returning. No additional reproduced unauthorized-withdrawal, old-reward leakage, double-burn or replay defect remained in the tested model.
 
-Application contracts have no callable token mint, upgrade, destruction, arbitrary execution, signature approval, oracle, randomness, staking, automated investment, or external library-link path. Token pulls always use `msg.sender`. All quantities/pages are bounded; persistent supply itself is not capped. Checked integer arithmetic and a safe timestamp cast avoid truncation. NonReentrant guards cover payment, claim, configuration and withdrawal operations involving external calls. Effects and records revert atomically on any interaction failure.
+## Evidence boundaries and unresolved operational risk
 
-The owner can bind the treasury's garden only once. Reciprocal references and matching owners are checked, but **choosing the actual reviewed garden address is an owner responsibility**: a malicious same-owner contract could imitate those getters. The service handoff and independent review establish the intended source. Neither binding nor constructors are a general contract-authenticity oracle. The sink, in contrast, is checked against the exact compiled sink runtime, and the NFT address/runtime are both pinned.
+The Base bytecode tests have fresh local storage and a mocked endpoint; the Ethereum bytecode test also uses a mocked endpoint. Separate live evidence establishes deployed token/adapter runtime hashes and selected reads, not a live cross-chain execution. No fork, live purchase, live burn, broadcast or independent signed audit was performed. Slither/Mythril were not available/run; vendored OpenZeppelin, forge-std, IMD internals and LayerZero are trusted external dependencies, not audited by this contribution.
 
-The IMD address is fixed and its live implementation was verified as nonproxy. Payment/withdrawal calls check availability/decimals and exact transfer effects; they do not pin the token's code hash. The existing token's bridge configuration and metadata administrator remain external trust assumptions. A hypothetical token with dishonest `balanceOf` or arbitrary supply changes is outside this verified dependency model. Fault-injection tests deliberately replace code at that fixed address locally to test rejection/guard behavior; no production setter permits such replacement.
+Pre-activation owner choice/verification of remote receiver code is a trust boundary. On-chain Ethereum cannot independently inspect Base source. The receipt channel relies on the official endpoint's current defaults/security and availability; the token bridge relies on IMD administrators, peers, adapter collateral and token policy. These external administrators can change behavior or deny service even though application configuration is immutable. A fixed gas or native fee ceiling can become inadequate in future. There is deliberately no arbitrary withdrawal/upgrade fallback that could release burn funds.
 
-The immutable sink permanently removes the allocation from spendable application custody. It offers no recovery even for mistaken transfers. Revenue and unsolicited assets are also constrained as documented. The owner controls ecosystem destination choices and can lose value through manual investment after withdrawal. There is no pause to stop users after setup and no upgrade to repair a defect; independent review is particularly important for irreversible configuration.
+Base compose occurs after adapter credit, potentially in another transaction. It validates the official message and sufficient pending custody, not a same-transaction before/after transfer delta. Its attribution assumes the source-verified adapter's lossless transfer and the token's verified ordinary-transfer behavior; the owner must verify receiver policy/limits before activation. The burn itself enforces exact balance/supply deltas. Concurrent prefunded/out-of-order messages and donations are covered without treating donations as confirmed burn.
 
-Foundry's build linter may flag exact balance comparisons, external calls in bounded claim loops, and external-call/event order. Exact comparisons deliberately enforce the specified exact-price/non-taxed IMD economy; the loops are bounded to 50 and revert atomically; payment methods are guarded and emit only committed logs on successful transactions. Reentrancy fault-injection tests cover the guarded paths. Slither/Mythril were not run; no independent tool audit or security approval is claimed.
+The owner can stop **new purchases**, choose fee destinations, rotate ownership through acceptance, and dispatch fixed-route burns; claims remain callable. IMD token transfer failures can still make a particular claim transaction revert without consuming entitlement. Public text can contain hostile content and is immutable; later renderers must escape it. Very large text batches may require smaller transactions because onchain storage is costly.
+
+The protected constructor/opcode requirements are reproduced locally. The pinned Owners test imports a network-owned `floor/OwnerChecks.sol` that is absent here; it is not claimed as executed. Local tests explicitly verify named ownership and no factory privilege. Final protected/service verification remains the network's responsibility.

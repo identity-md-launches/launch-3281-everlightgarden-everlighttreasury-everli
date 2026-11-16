@@ -1,87 +1,123 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
-
 import {Test} from "forge-std/Test.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {GardenEconomy} from "../../src/GardenEconomy.sol";
 import {WishGarden} from "../../src/WishGarden.sol";
 import {WishGardenTreasury} from "../../src/WishGardenTreasury.sol";
-import {WishGardenBurnSink} from "../../src/WishGardenBurnSink.sol";
-import {IMDRuntime} from "../fixtures/IMDRuntime.sol";
-import {IdentityNFTRuntime} from "../fixtures/IdentityNFTRuntime.sol";
-
-interface IIdentityNFT is IERC721 {
-    function mint(uint256 id) external;
-}
+import {EverlightBridgeQueue} from "../../src/bridge/EverlightBridgeQueue.sol";
+import {EverlightBurnReceiver} from "../../src/base/EverlightBurnReceiver.sol";
+import {GardenEconomy} from "../../src/GardenEconomy.sol";
+import {IMDBridge, Origin, MessagingFee} from "../../src/bridge/IMDBridge.sol";
+import {IMDOFTDouble, EndpointDouble, BaseAdapterDouble} from "./BridgeDoubles.sol";
 
 abstract contract GardenTestBase is Test {
     address internal constant OWNER = 0x48E4E74fE1d0c14404cEB57B9fec5b21329C6ec9;
     address internal constant IMD = 0xD34a99Bc0f67aE1bbd63C660e6d0b0dd03E263B7;
-    address internal constant NFT = 0x0000eC93127BAA929E58E97dd0095A2BFb38ec1D;
-    bytes32 internal constant EVIDENCE =
-        keccak256("local test owner attestation; not a production attestation");
-    IERC20 internal token = IERC20(IMD);
-    IIdentityNFT internal nft = IIdentityNFT(NFT);
+    bytes32 internal constant EVIDENCE = keccak256("TEST ONLY: offline bridge verification");
     WishGarden internal garden;
-    WishGardenTreasury internal treasury;
-    WishGardenBurnSink internal sink;
+    EverlightBurnReceiver internal receiver;
+    IMDOFTDouble internal token = IMDOFTDouble(IMD);
+    EndpointDouble internal endpoint = EndpointDouble(IMDBridge.ENDPOINT);
     address internal alice;
     address internal bob;
-    address internal operations;
-    address internal founder;
+    address internal carol;
+    uint64 internal receiveNonce;
 
     function setUp() public virtual {
         vm.chainId(1);
         vm.warp(1_800_000_000);
         alice = makeAddr("alice");
         bob = makeAddr("bob");
-        operations = makeAddr("operations test beneficiary");
-        founder = makeAddr("founder test beneficiary");
-        // Actual verified runtimes, with independent local storage. No RPC or environment dependency.
-        vm.etch(IMD, IMDRuntime.code());
-        vm.etch(NFT, IdentityNFTRuntime.code());
-        sink = new WishGardenBurnSink();
-        treasury = new WishGardenTreasury(OWNER, address(sink), operations, founder);
-        garden = new WishGarden(OWNER, address(treasury));
-        vm.prank(OWNER);
-        treasury.bindGarden(address(garden));
-        deal(IMD, alice, 1_000_000e18, true);
-        deal(IMD, bob, 1_000_000e18, true);
+        carol = makeAddr("carol");
+        vm.etch(IMD, address(new IMDOFTDouble()).code);
+        vm.etch(IMDBridge.ENDPOINT, address(new EndpointDouble()).code);
+        endpoint.setEid(30101);
+        endpoint.setFee(1e14);
+        token.setPeer(IMDBridge.asBytes32(IMDBridge.BASE_ADAPTER));
+        garden = new WishGarden(OWNER);
+        receiver = new EverlightBurnReceiver(OWNER, address(garden));
+        _activate(garden, address(receiver));
+        token.mint(alice, 1_000_000e18);
+        token.mint(bob, 1_000_000e18);
+        token.mint(carol, 1_000_000e18);
+        vm.deal(OWNER, 100 ether);
+        vm.deal(alice, 100 ether);
     }
 
-    function _buy(address purchaser, uint256 quantity, uint8 style) internal returns (uint256 firstId) {
+    function _activate(WishGarden g, address receiverAddress) internal {
+        vm.prank(OWNER);
+        g.configureBridge(receiverAddress, EVIDENCE);
+        bytes memory readyMessage =
+            abi.encode(uint8(1), g.bridgeConfigHash(), uint256(0), bytes32(0), uint256(0));
+        vm.prank(IMDBridge.ENDPOINT);
+        g.lzReceive(
+            Origin(30184, IMDBridge.asBytes32(receiverAddress), ++receiveNonce),
+            bytes32(uint256(receiveNonce)),
+            readyMessage,
+            address(this),
+            ""
+        );
+        vm.prank(OWNER);
+        g.activate();
+    }
+
+    function _buy(address purchaser, uint256 quantity, uint8 style) internal returns (uint256) {
+        return _buyIn(garden, purchaser, quantity, style);
+    }
+
+    function _buyIn(WishGarden g, address purchaser, uint256 quantity, uint8 style)
+        internal
+        returns (uint256 id)
+    {
+        uint8[] memory styles = new uint8[](quantity);
+        string[] memory wishes = new string[](quantity);
+        for (uint256 i; i < quantity; ++i) {
+            styles[i] = style;
+        }
         vm.startPrank(purchaser);
-        token.approve(address(garden), quantity * 1e18);
-        firstId = garden.buyCandles(quantity, style);
+        token.approve(address(g), quantity * 1e18);
+        id = g.buyCandles(styles, wishes);
         vm.stopPrank();
     }
 
-    function _confirmCollection() internal {
+    function _rejectBuy(WishGarden g, uint256 quantity, uint8 style, bytes memory reason) internal {
+        uint8[] memory styles = new uint8[](quantity);
+        string[] memory wishes = new string[](quantity);
+        for (uint256 i; i < quantity; ++i) {
+            styles[i] = style;
+        }
+        vm.startPrank(alice);
+        token.approve(address(g), quantity * 1e18);
+        vm.expectRevert(reason);
+        g.buyCandles(styles, wishes);
+        vm.stopPrank();
+    }
+
+    function _assertSolvent() internal view {
+        assertGe(token.balanceOf(address(garden)), garden.accountedBalance());
+        assertEq(
+            garden.totalBurnAllocated(),
+            garden.burnQueued() + garden.burnReserved() + garden.burnInTransit() + garden.confirmedBurn()
+        );
+        assertLe(
+            garden.claimableRewards(alice) + garden.claimableRewards(bob) + garden.claimableRewards(carol),
+            garden.rewardLiability()
+        );
+    }
+
+    function _setupBase() internal {
+        vm.chainId(8453);
+        endpoint.setEid(30184);
+        vm.etch(IMDBridge.BASE_IMD, address(new IMDOFTDouble()).code);
+        vm.etch(IMDBridge.BASE_ADAPTER, address(new BaseAdapterDouble()).code);
+        BaseAdapterDouble(IMDBridge.BASE_ADAPTER).setPeer(IMDBridge.asBytes32(IMD));
         vm.prank(OWNER);
-        garden.confirmOfficialCollection(EVIDENCE);
+        receiver.activate(EVIDENCE);
     }
 
-    function _mintNFT(address recipient, uint256 id) internal {
-        // The real collection permits one mint per wallet; transfer fixtures to the intended holder.
-        address minter = address(uint160(100_000 + id));
-        vm.startPrank(minter);
-        nft.mint(id);
-        nft.transferFrom(minter, recipient, id);
-        vm.stopPrank();
-    }
-
-    function _assertAccounting(uint256 paid) internal view {
-        assertEq(treasury.totalPayments(), paid * 1e18);
-        assertEq(treasury.totalIMDLocked(), paid * 0.3e18);
-        assertEq(token.balanceOf(address(sink)), paid * 0.3e18);
-        assertEq(treasury.ecosystemBalance() + treasury.totalEcosystemWithdrawn(), paid * 0.5e18);
-        assertEq(treasury.operationsBalance() + treasury.totalOperationsClaimed(), paid * 0.1e18);
-        assertEq(treasury.founderBalance() + treasury.totalFounderClaimed(), paid * 0.1e18);
-        assertEq(token.balanceOf(address(treasury)), treasury.accountedBalance());
-        assertEq(token.balanceOf(address(garden)), 0);
-        assertEq(treasury.totalSupplyBurned(), 0);
+    function _compose(bytes32 guid, uint256 id, uint256 amount) internal {
+        bytes memory message =
+            abi.encodePacked(uint64(1), uint32(30101), amount, IMDBridge.asBytes32(address(garden)), id);
+        vm.prank(IMDBridge.ENDPOINT);
+        receiver.lzCompose(IMDBridge.BASE_ADAPTER, guid, message, address(this), "");
     }
 }

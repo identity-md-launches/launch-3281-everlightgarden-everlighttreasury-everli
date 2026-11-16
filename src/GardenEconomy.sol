@@ -11,9 +11,10 @@ abstract contract GardenEconomy {
     uint256 public constant CANDLE_PRICE = 1e18;
     uint256 public constant MAX_BATCH_SIZE = 50;
     uint256 public constant BURN_ALLOCATION_PER_CANDLE = 0.3e18;
-    uint256 public constant ECOSYSTEM_PER_CANDLE = 0.5e18;
-    uint256 public constant OPERATIONS_PER_CANDLE = 0.1e18;
-    uint256 public constant FOUNDER_PER_CANDLE = 0.1e18;
+    uint256 public constant REWARD_PER_CANDLE = 0.3e18;
+    uint256 public constant ECOSYSTEM_PER_CANDLE = 0.3e18;
+    uint256 public constant OPERATIONS_PER_CANDLE = 0.05e18;
+    uint256 public constant FOUNDER_PER_CANDLE = 0.05e18;
 
     error WrongChain(uint256 actualChainId);
     error IMDUnavailable();
