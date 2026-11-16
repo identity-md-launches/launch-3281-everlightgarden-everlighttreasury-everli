@@ -66,6 +66,41 @@ FOUNDRY_FUZZ_SEED=0x9e56a8a08f479c4debd98dee24655411b47d3a5f10f757d2dd0fcb595fd4
 forge test --offline --summary
 ```
 
+## Revision: pinned Base receiver and ungated purchases
+
+The implementation revision (commit `92d9ff0`) pins the Base destination to this source's CREATE2
+receiver, stops checking bridge state in `buyCandles`, drops enforced options from the frozen route,
+lets an activated receiver accept adapter composes without the live peer check, and raises compose gas
+to 650,000. Seven earlier review tests had assumed the old behaviour and failed against it. They were
+updated as follows. No test was loosened to make a defect pass.
+
+- `ActivationAndRuntime` / `BridgeDeltaFailures`: fresh gardens are configured with their own
+  `pinnedBaseReceiver()`. A receiver deployed with `new` is no longer an acceptable destination.
+- `BridgeBoundaries`: the old route-change fuzz expected purchases to revert. Its replacement,
+  `testFuzz_changedFrozenRouteStopsDispatchOnlyAndRecoversWhenRestored`, checks the new behaviour.
+  Purchases and claims continue. For a token codehash, endpoint codehash, peer or endpoint-EID change,
+  dispatch fails closed without using an attempt or moving custody. It succeeds once the component is
+  restored. An enforced-options change does not block dispatch.
+
+`PinnedRouteRevision.t.sol` adds adversarial cases for the revision:
+
+- A stranger can run the deterministic Base deployment first. The result is still the owner's
+  receiver. The stranger cannot activate it or announce readiness, and the salt cannot be reused. A
+  receiver the stranger owns lands at another address and the garden refuses it.
+- A receiver pinned to another garden with the same owner can neither configure this garden nor
+  confirm its burns. The garden's own receiver confirms a job exactly once.
+- Fuzzing arbitrary peer values: purchases of 1–50 candles keep exact debit and credit. Only the
+  official adapter peer allows dispatch.
+- A compose queued before Base activation reverts, so it stays retryable at the endpoint. After
+  activation it is delivered exactly once through the endpoint, and the wallet-gas helper confirms
+  that delivery. Supply drops by the burned amount.
+- Disclosure (not a defect): the pinned receiver is owned by the garden's constructor owner for good.
+  If garden ownership transfers before the Base step, the new owner can configure the garden. The Base
+  receiver stays with the original owner until that owner hands it over with Ownable2Step on Base.
+
+Revision validation with the assignment seed: `forge test` **96 passed, 0 failed, 0 skipped**
+across 16 suites.
+
 ## Evidence limits
 
 The fault fixtures and invariant credits are explicitly simulated. Captured deployed bytecode is

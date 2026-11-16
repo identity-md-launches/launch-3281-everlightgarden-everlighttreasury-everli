@@ -24,16 +24,17 @@ interface ReviewPeerAdmin {
 contract ActivationAndRuntimeTest is GardenTestBase, WalletGas {
     function test_reconfiguringBeforeActivationInvalidatesOldReadinessAndOldPackets() public {
         WishGarden fresh = new WishGarden(OWNER);
+        address pinned = fresh.pinnedBaseReceiver();
         vm.prank(OWNER);
-        fresh.configureBridge(address(receiver), EVIDENCE);
+        fresh.configureBridge(pinned, EVIDENCE);
         bytes memory oldReady =
             abi.encode(uint8(1), fresh.bridgeConfigHash(), uint256(0), bytes32(0), uint256(0));
-        Origin memory origin = Origin(30184, IMDBridge.asBytes32(address(receiver)), 1);
+        Origin memory origin = Origin(30184, IMDBridge.asBytes32(pinned), 1);
         vm.prank(IMDBridge.ENDPOINT);
         fresh.lzReceive(origin, keccak256("first readiness"), oldReady, alice, "");
         assertTrue(fresh.baseReady());
         vm.prank(OWNER);
-        fresh.configureBridge(address(receiver), keccak256("revised offline evidence"));
+        fresh.configureBridge(pinned, keccak256("revised offline evidence"));
         assertFalse(fresh.baseReady());
         vm.prank(OWNER);
         vm.expectRevert(EverlightBridgeQueue.BridgeNotReady.selector);
@@ -58,6 +59,7 @@ contract ActivationAndRuntimeTest is GardenTestBase, WalletGas {
 
     function test_eachOfficialSourceRouteFactIsRequiredBeforeConfiguration() public {
         WishGarden fresh = new WishGarden(OWNER);
+        address pinned = fresh.pinnedBaseReceiver();
         bytes[6] memory calls = [
             abi.encodeCall(IIMDOFT.endpoint, ()),
             abi.encodeCall(IIMDOFT.token, ()),
@@ -78,14 +80,14 @@ contract ActivationAndRuntimeTest is GardenTestBase, WalletGas {
             vm.mockCall(i == 5 ? IMDBridge.ENDPOINT : IMD, calls[i], invalid[i]);
             vm.prank(OWNER);
             vm.expectRevert(EverlightBridgeQueue.InvalidBridgeConfiguration.selector);
-            fresh.configureBridge(address(receiver), EVIDENCE);
+            fresh.configureBridge(pinned, EVIDENCE);
             assertEq(fresh.baseReceiver(), address(0));
             assertEq(fresh.bridgeConfigHash(), bytes32(0));
             vm.clearMockedCalls();
         }
         vm.prank(OWNER);
-        fresh.configureBridge(address(receiver), EVIDENCE);
-        assertEq(fresh.baseReceiver(), address(receiver));
+        fresh.configureBridge(pinned, EVIDENCE);
+        assertEq(fresh.baseReceiver(), pinned);
         assertFalse(fresh.baseReady());
         assertFalse(fresh.activated());
     }
@@ -129,8 +131,9 @@ contract ActivationAndRuntimeTest is GardenTestBase, WalletGas {
 
     function test_malformedReadinessCannotUnlockPurchases() public {
         WishGarden fresh = new WishGarden(OWNER);
+        address pinned = fresh.pinnedBaseReceiver();
         vm.prank(OWNER);
-        fresh.configureBridge(address(receiver), EVIDENCE);
+        fresh.configureBridge(pinned, EVIDENCE);
         bytes32 config = fresh.bridgeConfigHash();
         for (uint256 field; field < 3; ++field) {
             bytes memory payload = abi.encode(
@@ -143,7 +146,7 @@ contract ActivationAndRuntimeTest is GardenTestBase, WalletGas {
             vm.prank(IMDBridge.ENDPOINT);
             vm.expectRevert(EverlightBridgeQueue.InvalidMessage.selector);
             fresh.lzReceive(
-                Origin(30184, IMDBridge.asBytes32(address(receiver)), uint64(field)),
+                Origin(30184, IMDBridge.asBytes32(pinned), uint64(field)),
                 keccak256(abi.encode("malformed readiness", field)),
                 payload,
                 alice,
@@ -160,7 +163,8 @@ contract ActivationAndRuntimeTest is GardenTestBase, WalletGas {
         vm.prank(address(0)); // The captured runtime has fresh local Ownable storage.
         ReviewPeerAdmin(IMD).setPeer(30184, IMDBridge.asBytes32(IMDBridge.BASE_ADAPTER));
         WishGarden fresh = new WishGarden(OWNER);
-        _activate(fresh, address(receiver));
+        address pinned = fresh.pinnedBaseReceiver();
+        _activate(fresh, pinned);
         deal(IMD, alice, 2e18, true);
         uint8[] memory styles = new uint8[](2);
         string[] memory wishes = new string[](2);

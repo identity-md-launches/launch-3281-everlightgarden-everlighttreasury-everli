@@ -231,27 +231,54 @@ contract BridgeBoundariesTest is GardenTestBase, WalletGas {
         assertEq(base.totalSupply(), 0);
     }
 
-    function testFuzz_changedFrozenRouteRejectsSpendingButClaimsStayPayable(uint8 componentSeed) public {
+    /// @dev Revised behaviour: a route change no longer gates purchases (they touch no bridge). It still
+    ///      makes burn dispatch fail closed for every custody-relevant component, without consuming an
+    ///      attempt, and the reserved job dispatches once the original component is restored. Enforced
+    ///      options (component 2) are not part of the frozen route and only affect the bounded fee.
+    function testFuzz_changedFrozenRouteStopsDispatchOnlyAndRecoversWhenRestored(uint8 componentSeed) public {
         _buy(alice, 2, 0);
         vm.prank(OWNER);
         uint256 id = garden.queueBurn(3e17);
         uint8 component = componentSeed % 5;
-        if (component == 0) vm.etch(IMD, bytes.concat(IMD.code, hex"00"));
-        if (component == 1) vm.etch(IMDBridge.ENDPOINT, bytes.concat(IMDBridge.ENDPOINT.code, hex"00"));
+        bytes memory imdCode = IMD.code;
+        bytes memory endpointCode = IMDBridge.ENDPOINT.code;
+        if (component == 0) vm.etch(IMD, bytes.concat(imdCode, hex"00"));
+        if (component == 1) vm.etch(IMDBridge.ENDPOINT, bytes.concat(endpointCode, hex"00"));
         if (component == 2) token.setOptions(hex"0003");
         if (component == 3) token.setPeer(IMDBridge.asBytes32(alice));
         if (component == 4) endpoint.setEid(30184);
-        _rejectBuy(
-            garden, 1, 0, abi.encodeWithSelector(EverlightBridgeQueue.InvalidBridgeConfiguration.selector)
-        );
+
+        // Purchases and claims continue regardless of bridge state.
+        _buy(bob, 1, 3);
+        assertEq(garden.totalCandles(), 3);
+        vm.prank(alice);
+        assertEq(garden.claimRewards(), 6e17); // 0.3 from candle 2 + 2 x 0.15 from bob's candle
+
+        if (component == 2) {
+            vm.prank(OWNER);
+            assertTrue(garden.dispatchBurn{value: 1e14}(id));
+            assertEq(garden.burnInTransit(), 3e17);
+            _assertSolvent();
+            return;
+        }
         vm.prank(OWNER);
         vm.expectRevert(EverlightBridgeQueue.InvalidBridgeConfiguration.selector);
         garden.dispatchBurn{value: 1e14}(id);
-        assertEq(garden.totalCandles(), 2);
+        (,, uint32 attempts, EverlightBridgeQueue.BurnStatus status) = garden.burnJobs(id);
+        assertEq(attempts, 0);
+        assertEq(uint8(status), uint8(EverlightBridgeQueue.BurnStatus.Queued));
         assertEq(garden.burnReserved(), 3e17);
         assertEq(garden.totalSendFailures(), 0);
-        vm.prank(alice);
-        assertEq(garden.claimRewards(), 3e17);
+        _assertSolvent();
+
+        if (component == 0) vm.etch(IMD, imdCode);
+        if (component == 1) vm.etch(IMDBridge.ENDPOINT, endpointCode);
+        if (component == 3) token.setPeer(IMDBridge.asBytes32(IMDBridge.BASE_ADAPTER));
+        if (component == 4) endpoint.setEid(30101);
+        vm.prank(OWNER);
+        assertTrue(garden.dispatchBurn{value: 1e14}(id));
+        assertEq(garden.burnInTransit(), 3e17);
+        assertEq(garden.burnReserved(), 0);
         _assertSolvent();
     }
 

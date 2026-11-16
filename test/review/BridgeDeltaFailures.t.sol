@@ -142,7 +142,7 @@ contract BridgeDeltaFailuresTest is GardenTestBase, WalletGas {
         ReceiptFaultIMD source = ReceiptFaultIMD(IMD);
         source.reset();
         garden = new WishGarden(OWNER);
-        receiver = new EverlightBurnReceiver(OWNER, address(garden));
+        receiver = _deployReceiver(garden, OWNER);
         _activate(garden, address(receiver));
         _buy(alice, 2, 0);
         vm.startPrank(OWNER);
@@ -281,7 +281,7 @@ contract BridgeDeltaFailuresTest is GardenTestBase, WalletGas {
         ReceiptFaultIMD source = ReceiptFaultIMD(IMD);
         source.reset();
         garden = new WishGarden(OWNER);
-        _activate(garden, address(receiver));
+        _activate(garden, garden.pinnedBaseReceiver());
         _buy(alice, 1, 0);
         vm.prank(OWNER);
         uint256 id = garden.queueBurn(3e17);
